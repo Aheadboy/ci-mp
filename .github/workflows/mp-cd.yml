@@ -64,4 +64,4 @@ jobs:
           WX_MINI_VERSION: "1.0.3"
           WX_MINI_DESC: "来自 GitHub Actions 的自动交付 #${{ github.run_number }}"
         run: |
-          node upload.js
+          node upload2.js
