@@ -1,49 +1,42 @@
-name: 微信小程序 CI/CD
+name: 微信小程序交付部署 (MP CD)
 
 on:
   push:
     branches:
-      - master # 当 master 分支有 push 时触发
+      - master # 当主分支有代码推送时自动触发构建
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # 使用纯净的 Linux 虚拟环境
 
     steps:
       # 1. 拉取仓库代码
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. 设置 Node.js 环境
+      # 2. 安装 Node.js 环境（锁定你刚才测试通过的 v18 或 v20 均可）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'yarn' # 自动缓存 yarn 依赖，加速后续构建
+          cache: 'npm' # 自动缓存依赖，加速后续构建
 
-      # 3. 安装项目依赖
+      # 3. 强行安装你脚本需要的微信 CI 依赖（纯局部安装，断绝全局污染）
       - name: Install Dependencies
         run: |
-          yarn install --frozen-lockfile
+          npm init -y
+          npm install miniprogram-ci --save-dev
 
-      # 4. 提取上传密钥并写入文件
-      # 微信官方要求私钥必须以文件形式存在，这里从 GitHub Secrets 读取并还原为本地文件
-      - name: Deploy Private Key
+      # 4. 从 GitHub Secrets 中安全还原出物理 private.key 文件
+      - name: Restore Private Key File
         run: |
-          echo "${{ secrets.MINIPROGRAM_PRIVATE_KEY }}" > private.key
+          echo "${{ secrets.MINIPROGRAM_PRIVATE_KEY }}" > ./private.key
 
-      # 5. 使用 miniprogram-ci 上传代码
-      # 由于你的 app.json 在根目录，所以 project_path 设为 ./ 
-      - name: Upload to WeChat Miniprogram
+      # 5. 注入环境变量，点燃你的 upload.js 脚本
+      - name: Run Upload Script
+        env:
+          WX_MINI_APPID: ${{ secrets.MINIPROGRAM_APPID }}
+          WX_MINI_VERSION: "1.0.2" # 你也可以利用 GitHub 变量动态改成自动计算的版本号
+          WX_MINI_DESC: "来自 GitHub Actions 的自动化推送 #${{ github.run_number }}"
         run: |
-          npx miniprogram-ci \
-            upload \
-            --appid wxc7004936e49228d0 \
-            --private-key-path ./private.key \
-            --project-path ./ \
-            --version 1.0.${{ github.run_number }} \
-            --upload-version 1.0.${{ github.run_number }} \
-            --desc "Automated deploy by GitHub Actions (Run #${{ github.run_number }})" \
-            --upload-description "CI/CD 自动上传" \
-            --enable-es6 true \
-            --enable-minify true
+          node upload.js
