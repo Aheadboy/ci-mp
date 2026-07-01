@@ -5,7 +5,7 @@ console.log('🚀 GitHub Actions 虚拟机已通电，开始拉起微信 CI...')
 
 // 1. 显式创建 project 实例（微信最新版规范，防止报错 lack of parameter: "project"）
 const project = new ci.Project({
-  appid: process.env.WX_MINI_APPID || 'wxc7004936e49228d0',
+  appid: process.env.MINIPROGRAM_APPID || 'wxc7004936e49228d0',
   type: 'miniProgram',
   projectPath: './',           // ⚠️ 确保这就是含有 app.json 的物理目录
   privateKeyPath: './private.key',

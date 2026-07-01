@@ -32,11 +32,35 @@ jobs:
         run: |
           echo "${{ secrets.MINIPROGRAM_PRIVATE_KEY }}" > ./private.key
 
-      # 5. 注入环境变量，点燃你的 upload.js 脚本
+      # # 5. 注入环境变量，点燃你的 upload.js 脚本
+      # - name: Run Upload Script
+      #   env:
+      #     WX_MINI_APPID: ${{ secrets.MINIPROGRAM_APPID }}
+      #     WX_MINI_VERSION: "1.0.2" # 你也可以利用 GitHub 变量动态改成自动计算的版本号
+      #     WX_MINI_DESC: "来自 GitHub Actions 的自动化推送 #${{ github.run_number }}"
+      #   run: |
+      #     node upload.js
+      - name: 🔍 云端沙盒路径与文件安全诊断
+        run: |
+          echo "=== 1. 当前工作目录路径 ==="
+          pwd
+          
+          echo "=== 2. 检查 app.json 是否在当前目录 ==="
+          ls -la app.json
+          
+          echo "=== 3. 检查 project.config.json 的 appid（防止空指或游客号） ==="
+          cat project.config.json | grep -i appid || echo "未找到 project.config.json"
+          
+          echo "=== 4. 诊断 private.key 的文件行数与首尾格式 ==="
+          wc -l ./private.key
+          head -n 1 ./private.key
+          tail -n 1 ./private.key
+
+      # 🚀 运行你修改后的强力日志脚本
       - name: Run Upload Script
         env:
           WX_MINI_APPID: ${{ secrets.MINIPROGRAM_APPID }}
-          WX_MINI_VERSION: "1.0.2" # 你也可以利用 GitHub 变量动态改成自动计算的版本号
+          WX_MINI_VERSION: "1.0.2"
           WX_MINI_DESC: "来自 GitHub Actions 的自动化推送 #${{ github.run_number }}"
         run: |
           node upload.js
