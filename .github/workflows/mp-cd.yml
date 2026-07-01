@@ -30,7 +30,7 @@ jobs:
       # 微信官方要求私钥必须以文件形式存在，这里从 GitHub Secrets 读取并还原为本地文件
       - name: Deploy Private Key
         run: |
-          echo "${{ secrets.WECHAT_MP_PRIVATE_KEY }}" > private.key
+          echo "${{ secrets.MINIPROGRAM_PRIVATE_KEY }}" > private.key
 
       # 5. 使用 miniprogram-ci 上传代码
       # 由于你的 app.json 在根目录，所以 project_path 设为 ./ 
@@ -38,7 +38,7 @@ jobs:
         run: |
           npx miniprogram-ci \
             upload \
-            --appid ${{ secrets.WECHAT_MP_APPID }} \
+            --appid ${{ secrets.MINIPROGRAM_APPID }} \
             --private-key-path ./private.key \
             --project-path ./ \
             --version 1.0.${{ github.run_number }} \
@@ -47,4 +47,3 @@ jobs:
             --upload-description "CI/CD 自动上传" \
             --enable-es6 true \
             --enable-minify true
-            
