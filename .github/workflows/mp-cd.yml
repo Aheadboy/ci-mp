@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'wechat-mini-program/**'
-      - '.github/workflows/mp-*.yml'
+
 
 jobs:
   deploy:
@@ -27,7 +25,6 @@ jobs:
           MP_PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
         run: |
           npm install -g miniprogram-ci
-          cd wechat-mini-program
           
           # 使用 EOF 写入私钥
           cat << 'EOF' > ./private.${MP_APPID}.key
