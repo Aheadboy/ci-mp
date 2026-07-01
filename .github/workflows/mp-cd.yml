@@ -59,8 +59,9 @@ jobs:
       # 🚀 运行你修改后的强力日志脚本
       - name: Run Upload Script
         env:
-          WX_MINI_APPID: ${{ secrets.MINIPROGRAM_APPID }}
-          WX_MINI_VERSION: "1.0.2"
-          WX_MINI_DESC: "来自 GitHub Actions 的自动化推送 #${{ github.run_number }}"
+          # ⚡ 必须确保这里的名字和 secrets 里的名字完全一致，且没有拼写错误
+          WX_MINI_APPID: ${{ secrets.MINIPROGRAM_APPID }} 
+          WX_MINI_VERSION: "1.0.3"
+          WX_MINI_DESC: "来自 GitHub Actions 的自动交付 #${{ github.run_number }}"
         run: |
           node upload.js
