@@ -1,0 +1,50 @@
+name: MiniProgram CD
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'wechat-mini-program/**'
+      - '.github/workflows/mp-*.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Upload to WeChat Miniprogram
+        env:
+          MP_APPID: ${{ secrets.MINIPROGRAM_APPID }}
+          MP_PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
+        run: |
+          npm install -g miniprogram-ci
+          cd wechat-mini-program
+          
+          # 使用 EOF 写入私钥
+          cat << 'EOF' > ./private.${MP_APPID}.key
+          ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
+          EOF
+          
+          echo "=================== 🔍 钥匙体检报告 ==================="
+          echo "1. 检查 AppID 变量字符长度: ${#MP_APPID}"
+          echo "2. 检查生成的密钥文件字节大小: $(wc -c < ./private.${MP_APPID}.key) 字节"
+          echo "3. 检查密钥文件总行数: $(wc -l < ./private.${MP_APPID}.key) 行"
+          echo "4. 检查密钥第一行是否标准: $(head -n 1 ./private.${MP_APPID}.key)"
+          echo "5. 检查密钥最后一行是否标准: $(tail -n 1 ./private.${MP_APPID}.key)"
+          echo "======================================================="
+          
+          echo "=== 尝试本地运行微信 CI 核心编译阶段 ==="
+          # 💡 我们将 upload 命令拆解。先不给微信网关发包，只让它在本地编译，看它会不会死在读取 Key 的阶段
+          miniprogram-ci pack --project-path ./ --appid $MP_APPID --private-key-path ./private.${MP_APPID}.key --version "1.0.17" --pkp ./output.zip
+          
+          echo "=== 编译成功，开始最终上传 ==="
+          miniprogram-ci upload --project-path ./ --appid $MP_APPID --private-key-path ./private.${MP_APPID}.key --version "1.0.17" --upload-version "1.0.17" --description "CI Diag Build" --robot 9
