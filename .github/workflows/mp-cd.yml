@@ -38,7 +38,7 @@ jobs:
         run: |
           npx miniprogram-ci \
             upload \
-            --appid ${{ secrets.MINIPROGRAM_APPID }} \
+            --appid wxc7004936e49228d0 \
             --private-key-path ./private.key \
             --project-path ./ \
             --version 1.0.${{ github.run_number }} \
