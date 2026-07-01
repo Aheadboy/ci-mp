@@ -1,47 +1,50 @@
-name: MiniProgram CD
+name: 微信小程序 CI/CD
 
 on:
   push:
     branches:
-      - master
-
+      - master # 当 master 分支有 push 时触发
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 拉取仓库代码
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 2. 设置 Node.js 环境
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
+          cache: 'yarn' # 自动缓存 yarn 依赖，加速后续构建
 
-      - name: Upload to WeChat Miniprogram
-        env:
-          MP_APPID: ${{ secrets.MINIPROGRAM_APPID }}
-          MP_PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
+      # 3. 安装项目依赖
+      - name: Install Dependencies
         run: |
-          npm install -g miniprogram-ci
-          
-          # 使用 EOF 写入私钥
-          cat << 'EOF' > ./private.${MP_APPID}.key
-          ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
-          EOF
-          
-          echo "=================== 🔍 钥匙体检报告 ==================="
-          echo "1. 检查 AppID 变量字符长度: ${#MP_APPID}"
-          echo "2. 检查生成的密钥文件字节大小: $(wc -c < ./private.${MP_APPID}.key) 字节"
-          echo "3. 检查密钥文件总行数: $(wc -l < ./private.${MP_APPID}.key) 行"
-          echo "4. 检查密钥第一行是否标准: $(head -n 1 ./private.${MP_APPID}.key)"
-          echo "5. 检查密钥最后一行是否标准: $(tail -n 1 ./private.${MP_APPID}.key)"
-          echo "======================================================="
-          
-          echo "=== 尝试本地运行微信 CI 核心编译阶段 ==="
-          # 💡 我们将 upload 命令拆解。先不给微信网关发包，只让它在本地编译，看它会不会死在读取 Key 的阶段
-          miniprogram-ci pack --project-path ./ --appid $MP_APPID --private-key-path ./private.${MP_APPID}.key --version "1.0.17" --pkp ./output.zip
-          
-          echo "=== 编译成功，开始最终上传 ==="
-          miniprogram-ci upload --project-path ./ --appid $MP_APPID --private-key-path ./private.${MP_APPID}.key --version "1.0.17" --upload-version "1.0.17" --description "CI Diag Build" --robot 9
+          yarn install --frozen-lockfile
+
+      # 4. 提取上传密钥并写入文件
+      # 微信官方要求私钥必须以文件形式存在，这里从 GitHub Secrets 读取并还原为本地文件
+      - name: Deploy Private Key
+        run: |
+          echo "${{ secrets.WECHAT_MP_PRIVATE_KEY }}" > private.key
+
+      # 5. 使用 miniprogram-ci 上传代码
+      # 由于你的 app.json 在根目录，所以 project_path 设为 ./ 
+      - name: Upload to WeChat Miniprogram
+        run: |
+          npx miniprogram-ci \
+            upload \
+            --appid ${{ secrets.WECHAT_MP_APPID }} \
+            --private-key-path ./private.key \
+            --project-path ./ \
+            --version 1.0.${{ github.run_number }} \
+            --upload-version 1.0.${{ github.run_number }} \
+            --desc "Automated deploy by GitHub Actions (Run #${{ github.run_number }})" \
+            --upload-description "CI/CD 自动上传" \
+            --enable-es6 true \
+            --enable-minify true
+            
